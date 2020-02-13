@@ -1,0 +1,1 @@
+TIMER_UPDATE = 25
