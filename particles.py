@@ -16,7 +16,7 @@ def randcolor():
 class Particle(Sprite):
     gravity = (0.0, 0.2)
 
-    def __init__(self, x, y, z, speed_x, speed_y, speed_z, particles, color=randcolor()):
+    def __init__(self, x, y, z, speed_x, speed_y, speed_z, particles, color=None):
         self.x = x
         self.y = y
         self.z = z
@@ -25,7 +25,7 @@ class Particle(Sprite):
         self.speed_z = speed_z
 
         self.default_image = Surface((10, 10), pygame.SRCALPHA)
-        self.default_image.fill(color)
+        self.default_image.fill(color if color else randcolor())
 
         angle = (180 / math.pi) * self.z
         self.image = pygame.transform.rotate(self.default_image, int(angle))

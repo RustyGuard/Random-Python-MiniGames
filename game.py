@@ -1,5 +1,6 @@
 from random import randint, uniform
 from typing import Dict, Tuple, List
+from winreg import KEY_ALL_ACCESS
 
 import pygame
 from pygame import Color
@@ -17,6 +18,18 @@ class Brick:
         self.childs: List[Cell] = []
         self.placed = False
         self.color = randcolor()
+
+    def move(self, x, y):
+        for cell in self.childs:
+            if cell.cannot_move(x, y):
+                for _ in range(3):
+                    FallingParticle(cell.rect.centerx, cell.rect.bottom, randint(0, 180), uniform(-2, 2), uniform(1, 5), randint(0, 10), self.game.particles, color=self.color)
+                break
+        else:
+            for cell in self.childs:
+                self.game.grid.pop((cell.x, cell.y), None)
+            for cell in self.childs:
+                cell.move(x, y)
 
     def fall(self):
         for cell in self.childs:
@@ -56,12 +69,28 @@ class Cell(Sprite):
             return True
         return False
 
+    def cannot_move(self, x, y):
+        if self.x + x < 0 or self.x + x >= self.game.width:
+            return True
+        if self.y + y < 0 or self.y + y >= self.game.height:
+            return True
+        cell = self.game.grid.get((self.x + x, self.y + y), None)
+        if cell is not None and cell.static:
+            return True
+        return False
+
     def update_rect(self):
         self.rect.topleft = self.game.offset[0] + self.x * self.game.cell_size, self.game.offset[
             1] + self.y * self.game.cell_size
 
     def fall(self):
         self.y += 1
+        self.game.grid[self.x, self.y] = self
+        self.update_rect()
+
+    def move(self, x, y):
+        self.x += x
+        self.y += y
         self.game.grid[self.x, self.y] = self
         self.update_rect()
 
@@ -77,7 +106,7 @@ class Tetris:
         self.grid: Dict[Tuple[int, int], Cell] = {}
         self.current_brick = Brick(self)
         self.current_brick.childs.append(Cell(0, 0, self.current_brick.color, self))
-        self.fall_delay = 2
+        self.fall_delay = 15
         self.fall_time = 0
         self.patterns = []
         self.paused = False
@@ -112,6 +141,7 @@ class Tetris:
                 (1, 1)
             ]
         ))
+        self.can_move = True
 
     def update(self, event):
         if event.type == TIMER_UPDATE:
@@ -122,7 +152,7 @@ class Tetris:
             self.fall_time += 1
             if self.fall_time >= self.fall_delay:
                 self.fall_time = 0
-                # print('fall')
+                self.can_move = True
                 self.current_brick.fall()
                 if self.current_brick.placed:
                     for _ in range(50):
@@ -139,7 +169,14 @@ class Tetris:
                             break
                     else:
                         self.paused = True
+                        self.can_move = False
                         print('Game over')
+        elif event.type == pygame.KEYDOWN:
+            if self.can_move:
+                if event.key == pygame.K_a:
+                    self.current_brick.move(-1, 0)
+                elif event.key == pygame.K_d:
+                    self.current_brick.move(1, 0)
 
     def draw(self, screen):
         self.group.draw(screen)
