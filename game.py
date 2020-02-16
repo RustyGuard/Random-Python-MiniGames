@@ -107,10 +107,25 @@ class Cell(Sprite):
             return True
         return False
 
+    def get_rel_x(self):
+        return self.x * self.game.cell_size + self.game.offset[0]
+
+    def get_rel_y(self):
+        return self.y * self.game.cell_size + self.game.offset[1]
+
     def update(self, event):
         if event.type == TIMER_UPDATE:
-            self.rect.left += math.ceil((self.x * self.game.cell_size - self.rect.left + self.game.offset[0]) / 2)
-            self.rect.top += math.ceil((self.y * self.game.cell_size - self.rect.top + self.game.offset[1]) / 2)
+            dist_x = self.get_rel_x() - self.rect.left
+            dist_y = self.get_rel_y() - self.rect.top
+            if abs(dist_x) <= 5:
+                self.rect.left += dist_x
+            else:
+                self.rect.left += math.ceil(dist_x / 4)
+
+            if abs(dist_y) <= 5:
+                self.rect.top += dist_y
+            else:
+                self.rect.top += math.ceil(dist_y / 4)
 
     def fall(self):
         self.y += 1
@@ -169,10 +184,26 @@ class Tetris:
         ))
         self.patterns.append((
             3, 2, [
+                (0, 1),
+                (1, 1),
+                (2, 1),
+                (2, 0)
+            ]
+        ))
+        self.patterns.append((
+            3, 2, [
                 (0, 0),
                 (1, 0),
                 (1, 1),
                 (2, 1)
+            ]
+        ))
+        self.patterns.append((
+            3, 2, [
+                (0, 1),
+                (1, 0),
+                (1, 1),
+                (2, 0)
             ]
         ))
         self.patterns.append((
@@ -283,12 +314,12 @@ class Tetris:
 
 def main():
     pygame.init()
-    width, height = 500, 500
-    screen = pygame.display.set_mode((width, height))
 
     running = True
     clock = pygame.time.Clock()
     game = Tetris((5, 5), 25, 10, 20)
+    width, height = game.width * game.cell_size + game.offset[0] * 2, game.height * game.cell_size + game.offset[1] * 2
+    screen = pygame.display.set_mode((width, height))
 
     pygame.time.set_timer(TIMER_UPDATE, 1000 // 60)
 
