@@ -20,6 +20,9 @@ class Game:
         self.gameover = False
         self.paused = False
 
+    def is_outside(self, x, y):
+        return x < 0 or x >= self.width or y < 0 or y >= self.height
+
     def update(self, event):
         if not (self.gameover or self.paused):
             self.sprites.update(event)

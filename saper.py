@@ -42,7 +42,7 @@ class Minesweeper(Game):
     def get_neightbours(self, x, y):
         for dx in range(-1, 2):
             for dy in range(-1, 2):
-                if x + dx < 0 or x + dx >= self.width or y + dy < 0 or y + dy >= self.height:
+                if self.is_outside(x + dx, y + dy):
                     continue
                 yield self.board[x + dx][y + dy]
 
@@ -84,7 +84,7 @@ class Minesweeper(Game):
         if s == 0:
             cells = [(1, 0), (-1, 0), (0, 1), (0, -1), (1, 1), (-1, -1), (-1, 1), (1, -1)]
             for i in cells:
-                if x + i[0] < 0 or x + i[0] >= self.width or y + i[1] < 0 or y + i[1] >= self.height:
+                if self.is_outside(x + i[0], y + i[1]):
                     continue
                 self.open_cell((x + i[0], y + i[1]))
 
