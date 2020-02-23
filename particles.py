@@ -8,6 +8,8 @@ from pygame.rect import Rect
 from pygame.sprite import Sprite
 from pygame.surface import Surface
 
+from constants import TIMER_UPDATE, TIMER_SECOND
+
 
 def randcolor():
     return randint(0, 255), randint(0, 255), randint(0, 255)
@@ -45,14 +47,15 @@ class Particle(Sprite):
         angle = (180 / math.pi) * self.z
         self.image = pygame.transform.rotate(self.default_image, int(angle))
 
-    def update(self, *args):
-        self.move(self.speed_x, self.speed_y)
-        self.speed_x += Particle.gravity[0]
-        self.speed_y += Particle.gravity[1]
-        self.z += self.speed_z
-        self.update_image()
-        if self.y > 500:
-            self.kill()
+    def update(self, event):
+        if event.type == TIMER_UPDATE:
+            self.move(self.speed_x, self.speed_y)
+            self.speed_x += self.gravity[0]
+            self.speed_y += self.gravity[1]
+            self.z += self.speed_z
+            self.update_image()
+            return True
+        return False
 
 
 class PopParticle(Particle):
@@ -61,39 +64,39 @@ class PopParticle(Particle):
     def can_pop(self):
         return abs(self.speed_x) > 0.01 or abs(self.speed_y) > 0.01
 
-    def update(self, *args):
-        super().update(*args)
-        if self.y > 500:
-            self.kill()
-            if self.can_pop():
-                PopParticle(self.x, self.y, self.z, self.speed_x * PopParticle.mult,
-                            -abs(self.speed_y) * PopParticle.mult, -self.speed_z,
-                            self.particles)
-        elif self.y < 0:
-            self.kill()
-            if self.can_pop():
-                PopParticle(self.x, self.y, self.z, self.speed_x * PopParticle.mult,
-                            abs(self.speed_y) * PopParticle.mult, -self.speed_z,
-                            self.particles)
-        elif self.x > 500:
-            self.kill()
-            if self.can_pop():
-                PopParticle(self.x, self.y, self.z, -abs(self.speed_x) * PopParticle.mult,
-                            self.speed_y * PopParticle.mult, -self.speed_z,
-                            self.particles)
-        elif self.x < 0:
-            self.kill()
-            if self.can_pop():
-                PopParticle(self.x, self.y, self.z, abs(self.speed_x) * PopParticle.mult,
-                            self.speed_y * PopParticle.mult, -self.speed_z,
-                            self.particles)
+    def update(self, event):
+        if super().update(event):
+            if self.y > 500:
+                self.kill()
+                if self.can_pop():
+                    PopParticle(self.x, self.y, self.z, self.speed_x * PopParticle.mult,
+                                -abs(self.speed_y) * PopParticle.mult, -self.speed_z,
+                                self.particles)
+            elif self.y < 0:
+                self.kill()
+                if self.can_pop():
+                    PopParticle(self.x, self.y, self.z, self.speed_x * PopParticle.mult,
+                                abs(self.speed_y) * PopParticle.mult, -self.speed_z,
+                                self.particles)
+            elif self.x > 500:
+                self.kill()
+                if self.can_pop():
+                    PopParticle(self.x, self.y, self.z, -abs(self.speed_x) * PopParticle.mult,
+                                self.speed_y * PopParticle.mult, -self.speed_z,
+                                self.particles)
+            elif self.x < 0:
+                self.kill()
+                if self.can_pop():
+                    PopParticle(self.x, self.y, self.z, abs(self.speed_x) * PopParticle.mult,
+                                self.speed_y * PopParticle.mult, -self.speed_z,
+                                self.particles)
 
 
 class FallingParticle(Particle):
-    def update(self, *args):
-        super().update(*args)
-        if self.y > 550:
-            self.kill()
+    def update(self, event):
+        if super().update(event):
+            if self.y > 550:
+                self.kill()
 
 
 def test():
@@ -104,11 +107,19 @@ def test():
     running = True
     clock = pygame.time.Clock()
     particles = pygame.sprite.Group()
+
+    pygame.time.set_timer(TIMER_UPDATE, 1000 // 60)
+    pygame.time.set_timer(TIMER_SECOND, 1000)
+    fps = 60
+    frames = 0
+
+    font = pygame.font.Font('fonts/Samson.ttf', 15)
+
     while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
-            if event.type == pygame.MOUSEBUTTONDOWN:
+            elif event.type == pygame.MOUSEBUTTONDOWN:
                 if event.button == 4:
                     FallingParticle(*event.pos, randint(0, 359),
                                     uniform(-1.0, 1.0) * 4, randint(-10, -5), uniform(-0.1, 0.1),
@@ -117,11 +128,16 @@ def test():
                     PopParticle(*event.pos, randint(0, 359),
                                 uniform(-1.0, 1.0) * 4, randint(-10, -5), uniform(-0.1, 0.1),
                                 particles)
+            elif event.type == TIMER_SECOND:
+                fps = frames
+                frames = 0
+            particles.update(event)
 
         screen.fill(pygame.Color('white'))
         particles.draw(screen)
-        particles.update()
+        screen.blit(font.render(f'FPS: {fps}', True, Color('blue')), (15, 5))
         pygame.display.flip()
+        frames += 1
         clock.tick(60)
 
 
